@@ -30,28 +30,27 @@ extension SVGParser: XMLParserDelegate {
 
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
         guard let element = SVGElementType(rawValue: elementName) else { return }
+//        log(.info, "\(elementName) \(attributeDict)")
+        
+
+        var elements = [SVGElement]()
         
         switch element {
         case .container:
-            let data = SVGContainer(data: attributeDict)
-            
+            elements.append(SVGContainer(data: attributeDict))
         
         case .group:
-            debugPrint("\(elementName) \(namespaceURI) \(qName) \(attributeDict)")
+            elements.append(SVGGroup(data: attributeDict))
             
-            SVGGroup(data: attributeDict)
 
-            break
-            
         case .path:
-            debugPrint("\(elementName) \(namespaceURI) \(qName) \(attributeDict)")
-            break
+            elements.append(SVGPath(data: attributeDict))
+            
         }
     }
     
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         
-//        debugPrint("\(elementName) \(namespaceURI) \(qName)")
         
     }
     

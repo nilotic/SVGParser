@@ -11,7 +11,7 @@ struct SVGContainer: SVGElement {
     let size: CGSize
     let frame: CGRect
     var elements: [SVGElement]
-    let type: SVGElementType
+    let type: SVGElementType = .container
 }
 
 extension SVGContainer {
@@ -36,6 +36,5 @@ extension SVGContainer {
         }
         
         elements = []
-        type     = .container
     }
 }

@@ -7,32 +7,32 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "BDC1D8EA-BBC0-4E6C-B3A4-99C77E32F313"
+            uuid = "6D641C1C-E586-48E3-877A-7A858655AC37"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "SVGParser/Util/SVGParser/SVGParser.swift"
+            filePath = "SVGParser/Util/SVGParser/Model/SVGAttribute.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "40"
-            endingLineNumber = "40"
-            landmarkName = "parser(_:didStartElement:namespaceURI:qualifiedName:attributes:)"
+            startingLineNumber = "583"
+            endingLineNumber = "583"
+            landmarkName = "init(key:value:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "23F3847C-1725-4713-991B-6C22F560C0B1"
+            uuid = "6E76628F-B654-462C-A5B8-341C108F7923"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "SVGParser/Util/SVGParser/SVGParser.swift"
+            filePath = "SVGParser/Util/SVGParser/Model/SVGAttribute.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "47"
-            endingLineNumber = "47"
-            landmarkName = "parser(_:didStartElement:namespaceURI:qualifiedName:attributes:)"
+            startingLineNumber = "421"
+            endingLineNumber = "421"
+            landmarkName = "init(key:value:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

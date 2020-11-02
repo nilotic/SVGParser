@@ -54,7 +54,7 @@ enum SVGAttribute {
     
     
     /// drawn
-    case d
+    case d(UIBezierPath)
     case decelerate
     case descent
     case diffuseConstant
@@ -73,7 +73,7 @@ enum SVGAttribute {
     case externalResourcesRequired
     
     
-    case fill(color: UIColor)
+    case fill(UIColor)
     case fillOpacity
     case fillRule
     case filter
@@ -364,7 +364,82 @@ extension SVGAttribute {
         case "cy":                              self = .cy
        
         
-        case "d":                               self = .d
+        case "d":
+            // @d:m321.572 27.037-4.867-10.92c-3.267-7.329-11.857-10.622-19.186-7.355l-73.936 32.958c-4.146 1.847-7.561 5.018-9.711 9.015l-42.924 79.79 36.12 19.431 39.607-73.624 67.542-30.109c7.329-3.267 10.622-11.857 7.355-19.186z
+            
+            /*
+             @d:
+             m (321.572, 27.037) (-4.867, -10.92)
+             c (-3.267, -7.329) (-11.857, -10.622) (-19.186, -7.355)
+             l (-73.936, 32.958)
+             c (-4.146, 1.847) (-7.561, 5.018) (-9.711, 9.015)
+             l (-42.924, 79.79) (36.12, 19.431) (39.607, -73.624) (67.542, -30.109)
+             c (7.329, -3.267) (10.622, -11.857) (7.355, -19.186)
+             z
+             */
+            
+            
+            // Extract sections
+            var sections = [(SVGPathType, Range<String.Index>)]()
+            var startIndex: String.Index? = nil
+            var sectionType: SVGPathType? = nil
+            
+            for (i, character) in Array(value).enumerated() {
+                guard let pathType = SVGPathType(data: character) else { continue }
+                
+                switch pathType {
+                case .closePath:
+                    sections.append((pathType, value.index(value.endIndex, offsetBy: -1)..<value.endIndex))
+                    
+                default:
+                    if let type = sectionType, let start = startIndex {
+                        sections.append((type, start..<value.index(value.startIndex, offsetBy: i)))
+                        
+                        startIndex  = nil
+                        sectionType = nil
+                    }
+                    
+                    let offset = i + 1
+                    guard offset < value.count else { continue }
+                    
+                    sectionType = pathType
+                    startIndex  = value.index(value.startIndex, offsetBy: offset)
+                }
+            }
+            
+            let formatter = NumberFormatter()
+            let path = UIBezierPath()
+            
+            for (type, range) in sections {
+                switch type {
+                case .closePath:
+                    path.close()
+                    
+                default:
+                    let components = value[range].replacingOccurrences(of: "-", with: " -").components(separatedBy: " ").filter ({ $0 != "" }).compactMap { formatter.number(from: $0)?.floatValue }
+                    guard components.count % 2 == 0 else {
+                        log(.error, "Failed to parse points.")
+                        return nil
+                    }
+                    
+                    
+                    for i in stride(from: 0, to: components.count, by: 2) {
+                        let point = CGPoint(x: CGFloat(components[i]), y: CGFloat(components[i + 1]))
+                        
+                        switch type {
+                        case .move:
+                            path.move(to: point)
+                            
+                            
+                        default:
+                            break
+                        }
+                    }
+                }
+            }
+            
+            self = .d(path)
+            
         case "decelerate":                      self = .decelerate
         case "descent":                         self = .descent
         case "diffuseConstant":                 self = .diffuseConstant
@@ -385,7 +460,7 @@ extension SVGAttribute {
         case "externalResourcesRequired":       self = .externalResourcesRequired
         
         
-        case "fill":                            self = .fill(color: value.color)
+        case "fill":                            self = .fill(value.color)
         case "fill-opacity":                    self = .fillOpacity
         case "fill-rule":                       self = .fillRule
         case "filter":                          self = .filter

@@ -8,28 +8,15 @@
 import Foundation
 
 struct SVGGroup: SVGElement {
-//    let attribute: SVGAttribute
-    let elements: [SVGElement]
-    let type: SVGElementType
+    let attributes: [SVGAttribute]
+    var elements: [SVGElement]
+    let type: SVGElementType = .group
 }
 
 extension SVGGroup {
     
     init(data: [String : String]) {
-        var attributes = [SVGAttribute]()
-        
-        for (key, value) in data {
-            guard let attribute = SVGAttribute(key: key, value: value) else {
-                log(.error, "Failed to extract attributes")
-                continue
-            }
-            
-            attributes.append(attribute)
-        }
-        
-        
-        
-        elements = []
-        type = .group
+        attributes = data.compactMap { SVGAttribute(key: $0.0, value: $0.1) }
+        elements   = []
     }
 }
