@@ -23,7 +23,6 @@ final class ViewController: UIViewController {
             debugPrint("Failed to parse a svg")
             return
         }
-
     }
 }
 

@@ -369,12 +369,12 @@ extension SVGAttribute {
             
             /*
              @d:
-             m (321.572, 27.037) (-4.867, -10.92)
-             c (-3.267, -7.329) (-11.857, -10.622) (-19.186, -7.355)
-             l (-73.936, 32.958)
-             c (-4.146, 1.847) (-7.561, 5.018) (-9.711, 9.015)
-             l (-42.924, 79.79) (36.12, 19.431) (39.607, -73.624) (67.542, -30.109)
-             c (7.329, -3.267) (10.622, -11.857) (7.355, -19.186)
+             m (321.572, 27.037) (-4.867, -10.92)   // Move
+             c (-3.267, -7.329) (-11.857, -10.622) (-19.186, -7.355) // curve
+             l (-73.936, 32.958)        // line
+             c (-4.146, 1.847) (-7.561, 5.018) (-9.711, 9.015)      // curve
+             l (-42.924, 79.79) (36.12, 19.431) (39.607, -73.624) (67.542, -30.109) // line
+             c (7.329, -3.267) (10.622, -11.857) (7.355, -19.186)           // curve
              z
              */
             
@@ -407,34 +407,71 @@ extension SVGAttribute {
                 }
             }
             
+            
+            
+            // Set a path
             let formatter = NumberFormatter()
             let path = UIBezierPath()
             
             for (type, range) in sections {
+                let components = value[range].replacingOccurrences(of: "-", with: " -").components(separatedBy: " ").filter ({ $0 != "" }).compactMap { formatter.number(from: $0)?.floatValue }
+              
                 switch type {
-                case .closePath:
-                    path.close()
-                    
-                default:
-                    let components = value[range].replacingOccurrences(of: "-", with: " -").components(separatedBy: " ").filter ({ $0 != "" }).compactMap { formatter.number(from: $0)?.floatValue }
+                case .move:
                     guard components.count % 2 == 0 else {
-                        log(.error, "Failed to parse points.")
+                        log(.error, "Failed to set move points")
                         return nil
                     }
-                    
                     
                     for i in stride(from: 0, to: components.count, by: 2) {
                         let point = CGPoint(x: CGFloat(components[i]), y: CGFloat(components[i + 1]))
                         
-                        switch type {
-                        case .move:
-                            path.move(to: point)
-                            
-                            
-                        default:
-                            break
+                        switch i {
+                        case 0:     path.move(to: point)
+                        default:    path.addLine(to: point)
                         }
                     }
+                    
+                case .line:
+                    for i in stride(from: 0, to: components.count, by: 2) {
+                        let point = CGPoint(x: CGFloat(components[i]), y: CGFloat(components[i + 1]))
+                        path.addLine(to: point)
+                    }
+                    
+                case .horizontalLine:
+                    break
+                    
+                case .verticalLine:
+                    break
+                    
+                case .curve:
+                    var points = [CGPoint]()
+                    for i in stride(from: 0, to: components.count, by: 2) {
+                        points.append(CGPoint(x: CGFloat(components[i]), y: CGFloat(components[i + 1])))
+                    }
+                        
+                    guard points.count == 3 else {
+                        log(.error, "Failed to set a curve.")
+                        return nil
+                    }
+                    
+                    path.addCurve(to: points[0], controlPoint1: points[1], controlPoint2: points[2])
+                    
+                case .smoothCurve:
+                    break
+                    
+                case .quadraticBezierCurve:
+                    break
+                    
+                case .smoothQuadraticBezierCurve:
+                    break
+                    
+                case .ellipticalArc:
+                    break
+                
+                
+                case .closePath:
+                    path.close()
                 }
             }
             

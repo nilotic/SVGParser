@@ -7,58 +7,88 @@
 
 import UIKit
 
-final class SVGParser: XMLParser {
+final class SVGParser: NSObject {
    
-    // MARK: - Initializer
-    override init(data: Data) {
-        super.init(data: data)
-        delegate = self
-    }
+    // MARK: - Value
+    // MARK: Private
+    private var container: SVGContainer? = nil
+    private var completion: ((SVGContainer?) -> Void)? = nil
+    private var currentGroup: SVGGroup? = nil
     
     
     
     // MARK: - Function
     // MARK: Public
-    
-    
+    func parse(data: Data?, completion: @escaping ((_ svg: SVGContainer?) -> Void)) -> Bool {
+        guard let data = data else { return false }
+        
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+        
+        self.completion = completion
+        return true
+    }
 }
 
 
 
 // MARK: - XMLParser Delegate
 extension SVGParser: XMLParserDelegate {
-
+    
+    func parserDidStartDocument(_ parser: XMLParser) {
+        container    = nil
+        currentGroup = nil
+    }
+    
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
-        guard let element = SVGElementType(rawValue: elementName) else { return }
-//        log(.info, "\(elementName) \(attributeDict)")
-        
-
-        var elements = [SVGElement]()
+        guard let element = SVGElementType(rawValue: elementName) else {
+            log(.error, "\(elementName) is unsupported type.")
+            return
+        }
         
         switch element {
         case .container:
-            elements.append(SVGContainer(data: attributeDict))
+            container = SVGContainer(data: attributeDict)
         
         case .group:
-            elements.append(SVGGroup(data: attributeDict))
+            let group = SVGGroup(data: attributeDict)
+            if currentGroup != nil {
+                currentGroup?.elements.append(group)
+                
+            } else {
+                currentGroup = group
+            }
             
-
+            guard container?.elements.isEmpty == true else { return }
+            container?.elements.append(group)
+            
         case .path:
-            elements.append(SVGPath(data: attributeDict))
+            let path = SVGPath(data: attributeDict)
             
+            if currentGroup != nil {
+                currentGroup?.elements.append(path)
+                
+            } else {
+                container?.elements.append(path)
+            }
         }
     }
     
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         
-        
     }
     
     func parserDidEndDocument(_ parser: XMLParser) {
-        log(.info, "")
+        completion?(container)
+        
+        container    = nil
+        currentGroup = nil
+        completion   = nil
     }
     
     func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {
-        debugPrint(parseError.localizedDescription)
+        log(.error, parseError.localizedDescription)
+        completion?(nil)
     }
 }

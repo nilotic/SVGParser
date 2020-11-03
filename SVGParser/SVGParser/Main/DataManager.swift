@@ -11,9 +11,11 @@ final class DataManager: NSObject {
     
     // MARK: - Value
     // MARK: Private
+    private let parser = SVGParser()
+    
     private var data: Data? {
         do {
-            guard let fileUrl = Bundle.main.url(forResource: "001", withExtension: "svg") else {
+            guard let fileUrl = Bundle.main.url(forResource: "000", withExtension: "svg") else {
                 debugPrint("Failed to load a svg file")
                 return nil
             }
@@ -30,11 +32,10 @@ final class DataManager: NSObject {
     // MARK: - Function
     // MARK: Public
     func parse() -> Bool {
-        guard let data = data else { return false }
+        return parser.parse(data: data) { svg in
         
-        let parser = SVGParser(data: data)
-        parser.parse()
         
-        return true
+        
+        }
     }
 }
