@@ -365,66 +365,80 @@ extension SVGAttribute {
        
         
         case "d":
-            // @d:m321.572 27.037-4.867-10.92c-3.267-7.329-11.857-10.622-19.186-7.355l-73.936 32.958c-4.146 1.847-7.561 5.018-9.711 9.015l-42.924 79.79 36.12 19.431 39.607-73.624 67.542-30.109c7.329-3.267 10.622-11.857 7.355-19.186z
-            
-            /*
-             @d:
-             m (321.572, 27.037) (-4.867, -10.92)   // Move
-             c (-3.267, -7.329) (-11.857, -10.622) (-19.186, -7.355) // curve
-             l (-73.936, 32.958)        // line
-             c (-4.146, 1.847) (-7.561, 5.018) (-9.711, 9.015)      // curve
-             l (-42.924, 79.79) (36.12, 19.431) (39.607, -73.624) (67.542, -30.109) // line
-             c (7.329, -3.267) (10.622, -11.857) (7.355, -19.186)           // curve
-             z
-             */
-            
-            
             // Extract sections
-            var sections = [(SVGPathType, Range<String.Index>)]()
+            var sections = [(SVGPathType, Range<String.Index>?)]()
             var startIndex: String.Index? = nil
             var sectionType: SVGPathType? = nil
             
             for (i, character) in Array(value).enumerated() {
                 guard let pathType = SVGPathType(data: character) else { continue }
                 
-                switch pathType {
-                case .closePath:
-                    sections.append((pathType, value.index(value.endIndex, offsetBy: -1)..<value.endIndex))
-                    
-                default:
-                    if let type = sectionType, let start = startIndex {
-                        sections.append((type, start..<value.index(value.startIndex, offsetBy: i)))
-                        
-                        startIndex  = nil
-                        sectionType = nil
+                if let type = sectionType {
+                    var range: Range<String.Index>? {
+                        guard let start = startIndex else { return nil }
+                        return start..<value.index(value.startIndex, offsetBy: i)
                     }
                     
-                    let offset = i + 1
-                    guard offset < value.count else { continue }
+                    sections.append((type, range))
                     
+                    startIndex  = nil
+                    sectionType = nil
+                }
+                
+                if i == value.count - 1 {
+                    // Added the last
+                    sections.append((pathType, nil))
+                    
+                } else {
+                    // Cache
                     sectionType = pathType
-                    startIndex  = value.index(value.startIndex, offsetBy: offset)
+                    startIndex  = value.index(value.startIndex, offsetBy: i + 1)
                 }
             }
-            
-            
+                
             
             // Set a path
             let formatter = NumberFormatter()
             let path = UIBezierPath()
             
             for (type, range) in sections {
-                let components = value[range].replacingOccurrences(of: "-", with: " -").components(separatedBy: " ").filter ({ $0 != "" }).compactMap { formatter.number(from: $0)?.floatValue }
-              
+                var replaced: [String] {
+                    guard let range = range else { return [] }
+                    return value[range].replacingOccurrences(of: "-", with: " -").components(separatedBy: " ").filter ({ $0 != "" })
+                }
+                
+                
+                // Separate "-7.786.34" to [-7.786, 0.34}
+                var points = [CGFloat]()
+                for string in replaced {
+                    let components = string.components(separatedBy: ".")
+                    
+                    switch components.count {
+                    case 3:
+                        guard let first = formatter.number(from: "\(components[0]).\(components[1])")?.floatValue, let second = formatter.number(from: "0.\(components[2])")?.floatValue else {
+                            log(.error, "Failed to extrac points.")
+                            return nil
+                        }
+                        
+                        points.append(CGFloat(first))
+                        points.append(CGFloat(second))
+                        
+                    default:
+                        guard let point = formatter.number(from: string)?.floatValue else { continue }
+                        points.append(CGFloat(point))
+                    }
+                }
+                
+                
                 switch type {
                 case .move:
-                    guard components.count % 2 == 0 else {
+                    guard points.count % 2 == 0 else {
                         log(.error, "Failed to set move points")
                         return nil
                     }
                     
-                    for i in stride(from: 0, to: components.count, by: 2) {
-                        let point = CGPoint(x: CGFloat(components[i]), y: CGFloat(components[i + 1]))
+                    for i in stride(from: 0, to: points.count, by: 2) {
+                        let point = CGPoint(x: points[i], y: points[i + 1])
                         
                         switch i {
                         case 0:     path.move(to: point)
@@ -433,8 +447,8 @@ extension SVGAttribute {
                     }
                     
                 case .line:
-                    for i in stride(from: 0, to: components.count, by: 2) {
-                        let point = CGPoint(x: CGFloat(components[i]), y: CGFloat(components[i + 1]))
+                    for i in stride(from: 0, to: points.count, by: 2) {
+                        let point = CGPoint(x: points[i], y: points[i + 1])
                         path.addLine(to: point)
                     }
                     
@@ -445,17 +459,20 @@ extension SVGAttribute {
                     break
                     
                 case .curve:
-                    var points = [CGPoint]()
-                    for i in stride(from: 0, to: components.count, by: 2) {
-                        points.append(CGPoint(x: CGFloat(components[i]), y: CGFloat(components[i + 1])))
-                    }
-                        
-                    guard points.count == 3 else {
+                    guard points.count % 3 == 0 else {
                         log(.error, "Failed to set a curve.")
                         return nil
                     }
                     
-                    path.addCurve(to: points[0], controlPoint1: points[1], controlPoint2: points[2])
+                    var curvePoints = [CGPoint]()
+                    for i in stride(from: 0, to: points.count, by: 2) {
+                        curvePoints.append(CGPoint(x: points[i], y: points[i + 1]))
+                    }
+                    
+                    for i in stride(from: 0, to: curvePoints.count, by: 3) {
+                        path.addCurve(to: curvePoints[i], controlPoint1: curvePoints[i + 1], controlPoint2: curvePoints[i + 2])
+                    }
+                    
                     
                 case .smoothCurve:
                     break

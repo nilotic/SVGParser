@@ -15,7 +15,7 @@ final class DataManager: NSObject {
     
     private var data: Data? {
         do {
-            guard let fileUrl = Bundle.main.url(forResource: "000", withExtension: "svg") else {
+            guard let fileUrl = Bundle.main.url(forResource: "001", withExtension: "svg") else {
                 debugPrint("Failed to load a svg file")
                 return nil
             }

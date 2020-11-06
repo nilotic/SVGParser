@@ -7,15 +7,18 @@
 
 import Foundation
 
-struct SVGGroup: SVGElement {
-    let attributes: [SVGAttribute]
-    var elements: [SVGElement]
-    let type: SVGElementType = .group
+final class SVGGroup: SVGElement {
+    var attributes: [SVGAttribute]  = []
+    var elements: [SVGElement]      = []
+    var parentElements: SVGElement? = nil
+    let type: SVGElementType        = .group
 }
 
 extension SVGGroup {
     
-    init(data: [String : String]) {
+    convenience init(data: [String : String]) {
+        self.init()
+        
         attributes = data.compactMap { SVGAttribute(key: $0.0, value: $0.1) }
         elements   = []
     }

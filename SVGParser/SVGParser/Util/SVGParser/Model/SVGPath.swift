@@ -9,14 +9,15 @@
 
 import UIKit
 
-struct SVGPath: SVGElement {
-    let attributes: [SVGAttribute]
-    let type: SVGElementType = .path
+final class SVGPath: SVGElement {
+    var attributes: [SVGAttribute] = []
+    let type: SVGElementType       = .path
 }
 
 extension SVGPath {
     
-    init(data: [String : String]) {
+    convenience init(data: [String : String]) {
+        self.init()
         attributes = data.compactMap { SVGAttribute(key: $0.0, value: $0.1) }
     }
 }

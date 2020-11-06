@@ -7,16 +7,18 @@
 
 import UIKit
 
-struct SVGContainer: SVGElement {
-    let size: CGSize
-    let frame: CGRect
-    var elements: [SVGElement]
-    let type: SVGElementType = .container
+final class SVGContainer: SVGElement {
+    var size: CGSize           = .zero
+    var frame: CGRect          = .zero
+    var elements: [SVGElement] = []
+    let type: SVGElementType   = .container
 }
 
 extension SVGContainer {
     
-    init(data: [String : String]) {
+    convenience init(data: [String : String]) {
+        self.init()
+        
         let formatter = NumberFormatter()
         
         if let width = formatter.number(from: data["width"] ?? "")?.floatValue, let height = formatter.number(from: data["height"] ?? "")?.floatValue {

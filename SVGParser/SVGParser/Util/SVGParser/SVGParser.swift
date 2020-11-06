@@ -11,10 +11,10 @@ final class SVGParser: NSObject {
    
     // MARK: - Value
     // MARK: Private
-    private var container: SVGContainer? = nil
     private var completion: ((SVGContainer?) -> Void)? = nil
+    private var container: SVGContainer? = nil
     private var currentGroup: SVGGroup? = nil
-    
+    private var elements = [SVGElement]()
     
     
     // MARK: - Function
@@ -37,8 +37,7 @@ final class SVGParser: NSObject {
 extension SVGParser: XMLParserDelegate {
     
     func parserDidStartDocument(_ parser: XMLParser) {
-        container    = nil
-        currentGroup = nil
+        elements.removeAll()
     }
     
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
@@ -50,41 +49,50 @@ extension SVGParser: XMLParserDelegate {
         switch element {
         case .container:
             container = SVGContainer(data: attributeDict)
-        
+            
         case .group:
             let group = SVGGroup(data: attributeDict)
-            if currentGroup != nil {
-                currentGroup?.elements.append(group)
-                
+          
+            if let currentGroup = currentGroup {
+                group.parentElements = currentGroup
+                currentGroup.elements.append(group)
+            
             } else {
-                currentGroup = group
+                group.parentElements = container
+                container?.elements.append(group)
             }
             
-            guard container?.elements.isEmpty == true else { return }
-            container?.elements.append(group)
+            currentGroup = group
             
         case .path:
-            let path = SVGPath(data: attributeDict)
-            
-            if currentGroup != nil {
-                currentGroup?.elements.append(path)
-                
-            } else {
-                container?.elements.append(path)
-            }
+            elements.append(SVGPath(data: attributeDict))
         }
     }
     
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        guard let element = SVGElementType(rawValue: elementName) else {
+            log(.error, "\(elementName) is unsupported type.")
+            return
+        }
         
+        switch element {
+        case .container:
+            break
+            
+        case .group:
+            guard elements.isEmpty == false, let currentGroup = currentGroup else { return }
+            currentGroup.elements.append(contentsOf: elements)
+            
+            self.currentGroup = currentGroup.parentElements as? SVGGroup
+            elements.removeAll()
+            
+        case .path:
+            break
+        }
     }
     
     func parserDidEndDocument(_ parser: XMLParser) {
-        completion?(container)
-        
-        container    = nil
-        currentGroup = nil
-        completion   = nil
+        elements.removeAll()
     }
     
     func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {
